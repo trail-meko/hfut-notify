@@ -1,0 +1,72 @@
+# ==========================================
+# 校园通知爬虫 + 推送 配置文件
+# ==========================================
+# 适配任意高校网站，更换 URL 即可使用
+#
+# 敏感信息（邮箱密码等）可通过环境变量覆盖：
+#   EMAIL_SENDER=your@qq.com
+#   EMAIL_PASSWORD=your_smtp_code
+#   EMAIL_RECIPIENTS=user1@qq.com,user2@gmail.com
+#   DINGTALK_WEBHOOK=https://oapi.dingtalk.com/robot/send?access_token=xxx
+#   DINGTALK_SECRET=your_secret
+#   FEISHU_WEBHOOK=https://open.feishu.cn/open-apis/bot/v2/hook/xxx
+
+# ---------- 爬取目标 ----------
+targets:
+  - name: 教务处
+    url: https://www.aao.cdut.edu.cn/
+    base_url: https://www.aao.cdut.edu.cn
+    # 通知列表页面
+    list_pages:
+      - url: https://www.aao.cdut.edu.cn/index/jwtz.htm
+        section: 教务通知
+      - url: https://www.aao.cdut.edu.cn/index/xwdt.htm
+        section: 新闻动态
+      - url: https://www.aao.cdut.edu.cn/index/gszl.htm
+        section: 公示专栏
+    # 识别通知链接的 URL 关键字
+    link_patterns:
+      - info/1171
+      - info/1172
+      - info/1248
+      - content.jsp
+
+  - name: 机电工程学院
+    url: https://mee.cdut.edu.cn/
+    base_url: https://mee.cdut.edu.cn
+    list_pages:
+      - url: https://mee.cdut.edu.cn/jdxw.htm
+        section: 机电新闻
+      - url: https://mee.cdut.edu.cn/tzgg.htm
+        section: 通知公告
+    link_patterns:
+      - info/1049
+      - info/1050
+
+# ---------- 通知渠道 ----------
+channels:
+  # 邮件通知（推荐使用 QQ 邮箱）
+  email:
+    enabled: true
+    smtp_server: smtp.qq.com
+    smtp_port: 465                    # SSL 端口
+    sender_email: "your_email@qq.com"     # 发件邮箱（或用环境变量 EMAIL_SENDER）
+    sender_password: "your_smtp_code"     # QQ邮箱→设置→账户→POP3/SMTP→生成授权码（或用环境变量 EMAIL_PASSWORD）
+    recipients:
+      - "your_recipient@qq.com"           # 收件人（或用环境变量 EMAIL_RECIPIENTS，逗号分隔）
+
+  # 钉钉机器人（可选）
+  dingtalk:
+    enabled: false
+    webhook: "https://oapi.dingtalk.com/robot/send?access_token=YOUR_TOKEN"
+    secret: "YOUR_SECRET"            # 钉钉机器人安全设置→加签
+
+  # 飞书机器人（可选）
+  feishu:
+    enabled: false
+    webhook: "https://open.feishu.cn/open-apis/bot/v2/hook/YOUR_HOOK"
+
+# ---------- 调度配置 ----------
+schedule:
+  # 检查最近 N 天的通知
+  lookback_days: 1

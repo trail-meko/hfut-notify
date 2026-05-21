@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+
+# 虚拟环境
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 运行时数据（包含已推送通知的 URL 记录，不应提交）
+history.json
+
+# 环境变量（包含敏感凭据，不应提交）
+.env
+.env.local
+
+# 操作系统
+.DS_Store
+Thumbs.db
+
+# 浏览器持久化目录
+cdut-chrome-profile/
+
+# 日志
+*.log
+
+# AI 工具模板（非项目文件）
+.spec-workflow/
+
+# 分发
+dist/
+build/
+*.egg-info/
