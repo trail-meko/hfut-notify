@@ -109,10 +109,25 @@ python main.py
 
 ### 方式一：GitHub Actions（推荐，免费）
 
+将项目推送到 GitHub 仓库后，由 GitHub 的云端服务器每天自动运行爬虫，**无需你自己开电脑**。
+
+**工作流说明**（`.github/workflows/schedule.yml`）：
+
+| 环节 | 说明 |
+|------|------|
+| 定时触发 | 每天北京时间 **8:00** 和 **14:00** 自动执行，也可在 GitHub 网页上手动触发 |
+| 安装环境 | 在 Ubuntu 虚拟机上自动安装 Python、Playwright、Chromium 浏览器 |
+| 运行爬虫 | 使用仓库 Secrets 中的邮箱密码等敏感信息运行 `python main.py`，推送通知 |
+| 保存历史 | 爬完后自动提交 `history.json` 变更并推送回仓库，确保不会重复推送同一条通知 |
+
+**配置步骤**：
+
 1. 将项目推送到 GitHub 仓库
 2. 在仓库 Settings → Secrets and variables → Actions 中添加 Secrets：
    - `EMAIL_SENDER`、`EMAIL_PASSWORD`、`EMAIL_RECIPIENTS` 等
 3. 工作流默认每天北京时间 8:00 和 14:00 自动运行
+
+> **注意**：GitHub Actions 的虚拟机上没有可见的浏览器窗口，部分 WAF 严格的网站可能会拦截请求。如果你的目标网站属于这种情况，建议使用方式二（Windows 计划任务）。
 
 ### 方式二：Windows 计划任务
 
