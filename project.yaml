@@ -1,0 +1,15 @@
+# 成员仓库根目录放一份这个文件，名字就叫 project.yaml
+# 字段说明见下方注释，可选字段留空或删掉都行
+
+name: 校园通知爬虫 + 多渠道推送系统
+authors: [2903537389]
+category: Tool
+tags: [爬虫, 通知推送, Playwright, GitHub Actions, 邮件, 钉钉]
+status: in-progress
+updated: 2026-05-21
+summary: 自动爬取高校网站通知公告，通过 QQ 邮件/钉钉/飞书多渠道推送，支持 GitHub Actions 云端定时运行
+
+readme: README.md
+
+links:
+  repo: https://github.com/2903537389/auto-get-schoolinformation-scri
