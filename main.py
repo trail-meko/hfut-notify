@@ -6,6 +6,8 @@
 import yaml
 import os
 import sys
+import logging
+import traceback
 from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
 import re
@@ -15,35 +17,44 @@ from storage import filter_new_notices
 
 CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.yaml")
 USER_DATA_DIR = os.path.join(os.path.expanduser("~"), "cdut-chrome-profile")
+LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "crawler.log")
+
+# 同时输出到文件和控制台
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(LOG_FILE, encoding="utf-8"),
+        logging.StreamHandler(sys.stdout),
+    ],
+)
+logger = logging.getLogger(__name__)
 
 
 def load_config():
-    """加载配置文件，并用环境变量覆盖敏感字段"""
+    """加载配置文件，环境变量可覆盖敏感信息"""
     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
-    # 用环境变量覆盖敏感配置（优先级高于 config.yaml）
+    # 环境变量覆盖敏感配置（优先级高于 config.yaml）
     channels = config.get("channels", {})
-
     email_cfg = channels.get("email", {})
-    if os.getenv("EMAIL_SENDER"):
-        email_cfg["sender_email"] = os.getenv("EMAIL_SENDER")
-    if os.getenv("EMAIL_PASSWORD"):
-        email_cfg["sender_password"] = os.getenv("EMAIL_PASSWORD")
-    if os.getenv("EMAIL_RECIPIENTS"):
-        email_cfg["recipients"] = [
-            r.strip() for r in os.getenv("EMAIL_RECIPIENTS").split(",") if r.strip()
-        ]
+    if os.environ.get("EMAIL_SENDER"):
+        email_cfg["sender_email"] = os.environ["EMAIL_SENDER"]
+    if os.environ.get("EMAIL_PASSWORD"):
+        email_cfg["sender_password"] = os.environ["EMAIL_PASSWORD"]
+    if os.environ.get("EMAIL_RECIPIENTS"):
+        email_cfg["recipients"] = [r.strip() for r in os.environ["EMAIL_RECIPIENTS"].split(",")]
 
     dt_cfg = channels.get("dingtalk", {})
-    if os.getenv("DINGTALK_WEBHOOK"):
-        dt_cfg["webhook"] = os.getenv("DINGTALK_WEBHOOK")
-    if os.getenv("DINGTALK_SECRET"):
-        dt_cfg["secret"] = os.getenv("DINGTALK_SECRET")
+    if os.environ.get("DINGTALK_WEBHOOK"):
+        dt_cfg["webhook"] = os.environ["DINGTALK_WEBHOOK"]
+    if os.environ.get("DINGTALK_SECRET"):
+        dt_cfg["secret"] = os.environ["DINGTALK_SECRET"]
 
     fs_cfg = channels.get("feishu", {})
-    if os.getenv("FEISHU_WEBHOOK"):
-        fs_cfg["webhook"] = os.getenv("FEISHU_WEBHOOK")
+    if os.environ.get("FEISHU_WEBHOOK"):
+        fs_cfg["webhook"] = os.environ["FEISHU_WEBHOOK"]
 
     return config
 
@@ -52,20 +63,40 @@ def scrape_site(context, target):
     """爬取单个网站的所有通知列表页"""
     name = target["name"]
     base_url = target["base_url"]
+    homepage = target.get("url", "")  # 首页地址，用于预热
     link_patterns = target.get("link_patterns", [])
     all_notices = []
 
+    # 先访问首页，建立合法会话，绕过 CAS/WAF 首请求检测
+    if homepage:
+        try:
+            logger.info(f"  预热: {homepage}")
+            home_page = context.new_page()
+            home_page.goto(homepage, wait_until="load", timeout=30000)
+            home_page.wait_for_timeout(3000)
+            html_len = len(home_page.content())
+            home_page.close()
+            logger.info(f"  预热完成，首页: {html_len} 字节")
+        except Exception as e:
+            logger.warning(f"  预热失败（继续爬取）: {e}")
+
     for lp in target["list_pages"]:
-        url = lp["url"]
+        page_url = lp["url"]
         section = lp.get("section", "")
         try:
-            print(f"  爬取: {url}")
+            logger.info(f"  爬取: {page_url}")
             page = context.new_page()
-            page.goto(url, wait_until="load", timeout=30000)
+            page.goto(page_url, wait_until="load", timeout=30000)
             page.wait_for_timeout(3000)
 
-            soup = BeautifulSoup(page.content(), "html.parser")
+            html = page.content()
             page.close()
+
+            # WAF / CAS 拦截检测
+            if len(html) < 5000:
+                logger.warning(f"  [WARN] {page_url} 可能被拦截，响应: {len(html)}字节，内容: {html[:500]}")
+
+            soup = BeautifulSoup(html, "html.parser")
 
             for a in soup.find_all("a", href=True):
                 href = a.get("href", "")
@@ -110,15 +141,15 @@ def scrape_site(context, target):
                 })
 
         except Exception as e:
-            print(f"  [ERROR] {url}: {e}")
+            logger.error(f"  [ERROR] {page_url}: {e}")
 
     return all_notices
 
 
 def main():
-    print("=" * 50)
-    print(f"  校园通知爬虫 {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    print("=" * 50)
+    logger.info("=" * 50)
+    logger.info(f"  校园通知爬虫 {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    logger.info("=" * 50)
 
     config = load_config()
     lookback = config.get("schedule", {}).get("lookback_days", 1)
@@ -129,7 +160,7 @@ def main():
         context = p.chromium.launch_persistent_context(
             user_data_dir=USER_DATA_DIR,
             channel="chrome",
-            headless=False,  # 需要可见窗口，WAF 才放行
+            headless=False,  # 需要可见窗口过WAF，任务完成后自动关闭浏览器
             viewport={"width": 1920, "height": 1080},
             args=["--disable-blink-features=AutomationControlled"],
         )
@@ -148,21 +179,28 @@ def main():
                         pass
                 else:
                     recent.append(n)
-            print(f"[{target['name']}] {len(notices)}条, 近{lookback}天{len(recent)}条")
+            logger.info(f"[{target['name']}] {len(notices)}条, 近{lookback}天{len(recent)}条")
             all_notices.extend(recent)
 
         context.close()
 
     if not all_notices:
-        print("无新通知。")
+        logger.info("无新通知。")
+        # 发送"暂无新通知"邮件
+        email_cfg = config.get("channels", {}).get("email", {})
+        if email_cfg.get("enabled"):
+            EmailSender(email_cfg).send_no_new()
         return
 
     # 去重
     new_notices = filter_new_notices(all_notices)
-    print(f"去重后: {len(new_notices)}条新通知")
+    logger.info(f"去重后: {len(new_notices)}条新通知")
 
     if not new_notices:
-        print("全部已推送过。")
+        logger.info("全部已推送过。")
+        email_cfg = config.get("channels", {}).get("email", {})
+        if email_cfg.get("enabled"):
+            EmailSender(email_cfg).send_no_new()
         return
 
     # 推送
@@ -175,8 +213,12 @@ def main():
     if dt_cfg.get("enabled"):
         DingTalkSender(dt_cfg).send(new_notices)
 
-    print("完成！")
+    logger.info("完成！")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        logger.error(f"未捕获异常: {e}")
+        logger.error(traceback.format_exc())
