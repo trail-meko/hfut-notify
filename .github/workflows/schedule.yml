@@ -39,6 +39,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add history.json
-          git diff --staged --quiet || git commit -m "chore: update history.json [skip ci]"
-          git push
+          if [ -f history.json ]; then
+            git add history.json
+            git diff --staged --quiet || git commit -m "chore: update history.json [skip ci]"
+            git push
+          else
+            echo "history.json 不存在，跳过提交"
+          fi

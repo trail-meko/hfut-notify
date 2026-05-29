@@ -37,7 +37,7 @@ targets:
     url: https://jwc.hfut.edu.cn/
     base_url: https://jwc.hfut.edu.cn
     list_pages:
-      - url: https://jwc.hfut.edu.cn/tzgg/list.htm
+      - url: https://jwc.hfut.edu.cn/
         section: 通知公告
     link_patterns:
       - /info/
