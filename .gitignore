@@ -28,6 +28,7 @@ Thumbs.db
 
 # 浏览器持久化目录
 cdut-chrome-profile/
+hfut-chrome-profile/
 
 # 日志
 *.log

@@ -1,6 +1,6 @@
 """
 校园通知爬虫 + 推送系统
-适配成都理工大学（CDUT）教务处 + 机电工程学院
+适配合肥工业大学（HFUT）微电子学院
 使用持久化 Chrome 用户目录绕过 WAF
 """
 import yaml
@@ -15,8 +15,24 @@ from datetime import datetime, timedelta
 from notifier import EmailSender, DingTalkSender
 from storage import filter_new_notices
 
+# 加载 .env 文件（本地开发用）
+def _load_dotenv():
+    env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if os.path.exists(env_file):
+        with open(env_file, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, _, value = line.partition("=")
+                key, value = key.strip(), value.strip()
+                if key and key not in os.environ:
+                    os.environ[key] = value
+
+_load_dotenv()
+
 CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.yaml")
-USER_DATA_DIR = os.path.join(os.path.expanduser("~"), "cdut-chrome-profile")
+USER_DATA_DIR = os.path.join(os.path.expanduser("~"), "hfut-chrome-profile")
 LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "crawler.log")
 
 # 同时输出到文件和控制台
@@ -156,14 +172,23 @@ def main():
     cutoff = datetime.now() - timedelta(days=lookback)
 
     # 使用持久化 Chrome 用户目录（保持 WAF Cookie）
+    is_github_actions = os.environ.get("GITHUB_ACTIONS") == "true"
+
     with sync_playwright() as p:
-        context = p.chromium.launch_persistent_context(
-            user_data_dir=USER_DATA_DIR,
-            channel="chrome",
-            headless=False,  # 需要可见窗口过WAF，任务完成后自动关闭浏览器
-            viewport={"width": 1920, "height": 1080},
-            args=["--disable-blink-features=AutomationControlled"],
-        )
+        launch_kwargs = {
+            "user_data_dir": USER_DATA_DIR,
+            "viewport": {"width": 1920, "height": 1080},
+            "args": ["--disable-blink-features=AutomationControlled"],
+        }
+        if is_github_actions:
+            # GitHub Actions 无桌面环境，使用 headless 模式
+            launch_kwargs["headless"] = True
+        else:
+            # 本地运行：尝试使用系统 Chrome，需要可见窗口过 WAF
+            launch_kwargs["headless"] = False
+            launch_kwargs["channel"] = "chrome"
+
+        context = p.chromium.launch_persistent_context(**launch_kwargs)
 
         all_notices = []
         for target in config["targets"]:

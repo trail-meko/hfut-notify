@@ -1,8 +1,7 @@
 # ==========================================
 # 校园通知爬虫 + 推送 配置文件
+# 合肥工业大学（HFUT）微电子学院
 # ==========================================
-# 适配任意高校网站，更换 URL 即可使用
-#
 # 敏感信息（邮箱密码等）可通过环境变量覆盖：
 #   EMAIL_SENDER=your@qq.com
 #   EMAIL_PASSWORD=your_smtp_code
@@ -13,53 +12,53 @@
 
 # ---------- 爬取目标 ----------
 targets:
-  - name: 教务处
-    url: https://www.aao.cdut.edu.cn/
-    base_url: https://www.aao.cdut.edu.cn
-    # 通知列表页面
+  - name: 微电子学院
+    url: http://wdzxy.hfut.edu.cn/
+    base_url: http://wdzxy.hfut.edu.cn
     list_pages:
-      - url: https://www.aao.cdut.edu.cn/index/jwtz.htm
-        section: 教务通知
-      - url: https://www.aao.cdut.edu.cn/index/xwdt.htm
-        section: 新闻动态
-      - url: https://www.aao.cdut.edu.cn/index/gszl.htm
-        section: 公示专栏
-    # 识别通知链接的 URL 关键字
+      - url: http://wdzxy.hfut.edu.cn/11462/list.htm
+        section: 通知公告
+      - url: http://wdzxy.hfut.edu.cn/xsgz/list.htm
+        section: 学工动态
     link_patterns:
-      - info/1171
-      - info/1172
-      - info/1248
-      - content.jsp
+      - c11462a
+      - c9899a
 
-  - name: 机电工程学院
-    url: https://mee.cdut.edu.cn/
-    base_url: https://mee.cdut.edu.cn
+  - name: 合工大主站
+    url: https://www.hfut.edu.cn/
+    base_url: https://www.hfut.edu.cn
     list_pages:
-      - url: https://mee.cdut.edu.cn/jdxw.htm
-        section: 机电新闻
-      - url: https://mee.cdut.edu.cn/tzgg.htm
+      - url: https://www.hfut.edu.cn/xwdt/tzgg.htm
         section: 通知公告
     link_patterns:
-      - info/1049
-      - info/1050
+      - info/
+
+  - name: 教务处
+    url: https://jwc.hfut.edu.cn/
+    base_url: https://jwc.hfut.edu.cn
+    list_pages:
+      - url: https://jwc.hfut.edu.cn/tzgg/list.htm
+        section: 通知公告
+    link_patterns:
+      - /info/
 
 # ---------- 通知渠道 ----------
 channels:
-  # 邮件通知（推荐使用 QQ 邮箱）
+  # 邮件通知（QQ 邮箱）
   email:
     enabled: true
     smtp_server: smtp.qq.com
-    smtp_port: 465                    # SSL 端口
-    sender_email: "your_email@qq.com"     # 发件邮箱（或用环境变量 EMAIL_SENDER）
-    sender_password: "your_smtp_code"     # QQ邮箱→设置→账户→POP3/SMTP→生成授权码（或用环境变量 EMAIL_PASSWORD）
+    smtp_port: 465
+    sender_email: "1472433810@qq.com"
+    sender_password: "your_smtp_code"     # TODO: 替换为 QQ邮箱授权码
     recipients:
-      - "your_recipient@qq.com"           # 收件人（或用环境变量 EMAIL_RECIPIENTS，逗号分隔）
+      - "1472433810@qq.com"
 
   # 钉钉机器人（可选）
   dingtalk:
     enabled: false
     webhook: "https://oapi.dingtalk.com/robot/send?access_token=YOUR_TOKEN"
-    secret: "YOUR_SECRET"            # 钉钉机器人安全设置→加签
+    secret: "YOUR_SECRET"
 
   # 飞书机器人（可选）
   feishu:
@@ -68,5 +67,4 @@ channels:
 
 # ---------- 调度配置 ----------
 schedule:
-  # 检查最近 N 天的通知
   lookback_days: 1
