@@ -102,8 +102,8 @@ def scrape_site(context, target):
         try:
             logger.info(f"  爬取: {page_url}")
             page = context.new_page()
-            page.goto(page_url, wait_until="load", timeout=30000)
-            page.wait_for_timeout(3000)
+            page.goto(page_url, wait_until="networkidle", timeout=30000)
+            page.wait_for_timeout(5000)
 
             html = page.content()
             page.close()
