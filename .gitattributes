@@ -1,0 +1,3 @@
+# 强制 YAML 和工作流文件使用 LF 换行
+*.yml text eol=lf
+*.yaml text eol=lf
