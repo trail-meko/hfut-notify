@@ -42,6 +42,24 @@ targets:
     link_patterns:
       - /info/
 
+  - name: 学工部
+    url: https://xgb.hfut.edu.cn/
+    base_url: https://xgb.hfut.edu.cn
+    list_pages:
+      - url: https://xgb.hfut.edu.cn/tzgg.htm
+        section: 通知公告
+    link_patterns:
+      - /info/
+
+  - name: 团委
+    url: https://tuanwei.hfut.edu.cn/
+    base_url: https://tuanwei.hfut.edu.cn
+    list_pages:
+      - url: https://tuanwei.hfut.edu.cn/736/list.htm
+        section: 通知公告
+    link_patterns:
+      - c736a
+
 # ---------- 通知渠道 ----------
 channels:
   # 邮件通知（QQ 邮箱）

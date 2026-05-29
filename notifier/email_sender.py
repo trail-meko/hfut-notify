@@ -73,8 +73,8 @@ class EmailSender:
             if source not in groups:
                 groups[source] = []
             groups[source].append(n)
-        # 排序：微电子学院 → 其他学院来源 → 教务处 → 合工大主站
-        priority = ["微电子学院", "教务处", "合工大主站"]
+        # 排序：微电子学院 → 学工部 → 团委 → 教务处 → 合工大主站
+        priority = ["微电子学院", "学工部", "团委", "教务处", "合工大主站"]
         ordered = []
         for key in priority:
             if key in groups:
